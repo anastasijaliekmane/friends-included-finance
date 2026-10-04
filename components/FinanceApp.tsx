@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useState } from "react";
 import type { Allocation, Employee, Expense, FinanceSummary, Sale } from "@/lib/types";
 
 type AppState = {
@@ -36,7 +36,6 @@ export default function FinanceApp() {
   const [data, setData] = useState<AppState | null>(null);
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState<{ tone: "ok" | "error"; text: string } | null>(null);
-  const [tab, setTab] = useState("overview");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -65,7 +64,6 @@ export default function FinanceApp() {
   }, [employeeId]);
   const actor = data?.actor ?? employeesFallback.find((employee) => employee.id === employeeId)!;
   const employees = data?.employees.length ? data.employees : employeesFallback;
-  const pendingCount = (data?.sales.filter((sale) => sale.status === "pending").length ?? 0) + (data?.expenses.filter((expense) => expense.status === "awaiting_allocation").length ?? 0);
 
   async function action(path: string, body: object, success: string) {
     try {
@@ -78,55 +76,34 @@ export default function FinanceApp() {
     }
   }
 
-  const navigation = useMemo(() => {
-    const items = [{ id: "overview", label: actor.role === "manager" ? "Dashboard" : "My activity" }];
-    if (actor.role !== "manager") items.push({ id: "new", label: actor.role === "salesperson" ? "Report sale" : "Report expense" });
-    if (actor.role === "manager") items.push({ id: "decisions", label: `Decisions${pendingCount ? ` (${pendingCount})` : ""}` }, { id: "setup", label: "Manager setup" });
-    items.push({ id: "records", label: "Records" });
-    return items;
-  }, [actor.role, pendingCount]);
-
   return (
-    <main>
-      <header className="topbar">
-        <div className="brand"><span className="brandmark">F</span><span>Friends Included <small>Finance</small></span></div>
-        <label className="role-picker">
-          <span>Demonstration role</span>
-          <select value={employeeId} onChange={(event) => { setTab("overview"); setLoading(true); setEmployeeId(event.target.value); }}>
-            {employees.map((employee) => <option key={employee.id} value={employee.id}>{employee.display_name}</option>)}
-          </select>
-        </label>
+    <main className="site-frame">
+      <header className="hero">
+        <div>
+          <p className="hero-kicker">Friends Included Ltd</p>
+          <h1>Wedding guests for hire<br /><em>finance system</em></h1>
+          <p className="hero-copy">All friendships expire at checkout. · Built by {process.env.NEXT_PUBLIC_OWNER_NAME || "Anastasija Liekmane"}</p>
+        </div>
+        <div className="connection-card"><strong>Live data connection</strong><span>Supabase is the financial source of truth.</span></div>
       </header>
 
-      <section className="shell">
-        <aside className="sidebar">
-          <div className="identity">
-            <p className="eyebrow">Signed in for demonstration</p>
-            <strong>{actor.display_name}</strong>
-            <span>{actor.role.replace("_", " ")}</span>
-            {process.env.NEXT_PUBLIC_OWNER_NAME && <p className="owner">Application by {process.env.NEXT_PUBLIC_OWNER_NAME}</p>}
-          </div>
-          <nav aria-label="Primary navigation">
-            {navigation.map((item) => <button key={item.id} className={tab === item.id ? "active" : ""} onClick={() => setTab(item.id)}>{item.label}</button>)}
-          </nav>
-          <div className="sidebar-links">
-            {process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME && <a href={`https://t.me/${process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME}`} target="_blank">Open Telegram bot</a>}
-            {process.env.NEXT_PUBLIC_GOOGLE_SHEET_URL && <a href={process.env.NEXT_PUBLIC_GOOGLE_SHEET_URL} target="_blank">View Google Sheet</a>}
-            {process.env.NEXT_PUBLIC_GITHUB_URL && <a href={process.env.NEXT_PUBLIC_GITHUB_URL} target="_blank">View source code</a>}
-          </div>
-        </aside>
+      <section className="role-band">
+        <label className="role-picker">
+          <span>Demonstration role</span>
+          <select value={employeeId} onChange={(event) => { setLoading(true); setEmployeeId(event.target.value); }}>
+            {employees.map((employee) => <option key={employee.id} value={employee.id}>{employee.display_name.split(" ")[0]} — {employee.role === "expense_reporter" ? "expense reporter" : employee.role === "salesperson" ? "sales" : "manager"}</option>)}
+          </select>
+        </label>
+        <p><strong>{actor.display_name.split(" ")[0]}</strong> {actor.role === "manager" ? "can review company-wide records, approve sales, and allocate expenses." : actor.role === "salesperson" ? "can see only their own submitted sales and statuses." : "can submit expenses and see only their own records."}</p>
+      </section>
 
-        <section className="workspace">
+      <section className="workspace">
           {notice && <div className={cls("notice", notice.tone)} role="status">{notice.text}</div>}
           {loading && <div className="loading">Updating records…</div>}
           {!loading && !data && <ConfigurationHelp />}
-          {!loading && data && tab === "overview" && (actor.role === "manager" ? <Dashboard data={data} /> : <MyActivity data={data} actor={actor} setTab={setTab} />)}
-          {!loading && data && tab === "new" && actor.role === "salesperson" && <SaleForm actor={actor} submit={action} />}
-          {!loading && data && tab === "new" && actor.role === "expense_reporter" && <ExpenseForm actor={actor} submit={action} />}
-          {!loading && data && tab === "decisions" && actor.role === "manager" && <Decisions data={data} action={action} />}
-          {!loading && data && tab === "setup" && actor.role === "manager" && <ManagerSetup data={data} action={action} />}
-          {!loading && data && tab === "records" && <Records data={data} actor={actor} action={action} />}
-        </section>
+          {!loading && data && actor.role === "manager" && <><Dashboard data={data} /><ProjectLinks /><ReviewerGuide /><Decisions data={data} action={action} /><ManagerSetup data={data} action={action} /><Records data={data} actor={actor} action={action} /></>}
+          {!loading && data && actor.role === "salesperson" && <><SaleForm actor={actor} submit={action} /><ReviewerGuide /><ProjectLinks /><Records data={data} actor={actor} action={action} /></>}
+          {!loading && data && actor.role === "expense_reporter" && <><ExpenseForm actor={actor} submit={action} /><ReviewerGuide /><ProjectLinks /><Records data={data} actor={actor} action={action} /></>}
       </section>
     </main>
   );
@@ -139,55 +116,35 @@ function PageTitle({ eyebrow, title, children }: { eyebrow: string; title: strin
 function Dashboard({ data }: { data: AppState }) {
   const s = data.summary!;
   return <>
-    <PageTitle eyebrow="Financial control" title="Company dashboard"><p>Approved work, commissions, and every recorded expense.</p></PageTitle>
-    <div className="kpis">
-      <Metric label="Approved income" value={euro(s.company.approvedIncomeCents)} />
-      <Metric label="Commission expense" value={euro(s.company.commissionExpenseCents)} />
-      <Metric label="Recorded expenses" value={euro(s.company.recordedExpenseCents)} />
-      <Metric label="Company result" value={euro(s.company.resultCents)} strong />
-    </div>
-    <div className="project-grid">
+    <PageTitle eyebrow="Financial dashboard" title="The numbers, reconciled"><p>Approved income, commissions, and recorded expenses.</p></PageTitle>
+    <div className="project-grid dashboard-grid">
       <ProjectCard code="A" name="Respectable Relatives" data={s.projectA} />
       <ProjectCard code="B" name="Drunk University Friends" data={s.projectB} />
+      <section className="project-card company-card"><p className="eyebrow">Company total</p><h2 className="project-result">{euro(s.company.resultCents)}</h2><dl className="statement"><div><dt>Approved income</dt><dd>{euro(s.company.approvedIncomeCents)}</dd></div><div><dt>Commission expense</dt><dd>{euro(s.company.commissionExpenseCents)}</dd></div><div><dt>All recorded expenses</dt><dd>{euro(s.company.recordedExpenseCents)}</dd></div><div><dt>Company overhead</dt><dd>{euro(s.company.overheadCents)}</dd></div><div><dt>Awaiting allocation</dt><dd>{euro(s.company.awaitingAllocationCents)}</dd></div></dl></section>
     </div>
-    <div className="detail-grid">
-      <section className="panel"><div className="panel-head"><h2>Reconciliation</h2><span>Company</span></div>
-        <dl className="statement">
-          <div><dt>Combined project results</dt><dd>{euro(s.projectA.resultCents + s.projectB.resultCents)}</dd></div>
-          <div><dt>Company overhead</dt><dd>−{euro(s.company.overheadCents)}</dd></div>
-          <div><dt>Awaiting allocation</dt><dd>−{euro(s.company.awaitingAllocationCents)}</dd></div>
-          <div className="total"><dt>Company result</dt><dd>{euro(s.company.resultCents)}</dd></div>
-        </dl>
-      </section>
-      <section className="panel"><div className="panel-head"><h2>Commission earned</h2><span>Total {euro(s.commissions.total)}</span></div>
-        <div className="commission-bars">
-          {[["Richard", s.commissions.richard], ["Anastasia", s.commissions.anastasia], ["Jean-Claude", s.commissions.jeanClaude]].map(([name, value]) => {
-            const amount = Number(value); const width = s.commissions.total ? Math.max(6, amount / s.commissions.total * 100) : 0;
-            return <div key={String(name)}><div><span>{name}</span><strong>{euro(amount)}</strong></div><i><b style={{ width: `${width}%` }} /></i></div>;
-          })}
-        </div>
-      </section>
-    </div>
+    <section className="commission-strip"><span>Commission earned</span><strong>Richard {euro(s.commissions.richard)}</strong><strong>Anastasia {euro(s.commissions.anastasia)}</strong><strong>Jean-Claude {euro(s.commissions.jeanClaude)}</strong></section>
     <section className="panel attention"><div><p className="eyebrow">Needs Svetlana</p><h2>{data.sales.filter((s) => s.status === "pending").length} sales and {data.expenses.filter((e) => e.status === "awaiting_allocation").length} expenses await a decision</h2></div></section>
   </>;
 }
 
-function Metric({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
-  return <article className={cls("metric", strong && "strong")}><span>{label}</span><b>{value}</b></article>;
-}
-
 function ProjectCard({ code, name, data }: { code: string; name: string; data: FinanceSummary["projectA"] }) {
-  return <section className="project-card"><div className="project-head"><span>{code}</span><div><p>Project {code}</p><h2>{name}</h2></div></div>
-    <dl className="statement"><div><dt>Approved income</dt><dd>{euro(data.approvedIncomeCents)}</dd></div><div><dt>Commissions</dt><dd>−{euro(data.commissionExpenseCents)}</dd></div><div><dt>Allocated expenses</dt><dd>−{euro(data.allocatedExpenseCents)}</dd></div><div className="total"><dt>Result</dt><dd>{euro(data.resultCents)}</dd></div></dl>
+  return <section className="project-card"><p className="eyebrow">Project {code}</p><h2 className="project-result">{euro(data.resultCents)}</h2><p className="project-name">{name}</p>
+    <dl className="statement"><div><dt>Approved income</dt><dd>{euro(data.approvedIncomeCents)}</dd></div><div><dt>Commission expense</dt><dd>{euro(data.commissionExpenseCents)}</dd></div><div><dt>Allocated expenses</dt><dd>{euro(data.allocatedExpenseCents)}</dd></div></dl>
   </section>;
 }
 
-function MyActivity({ data, actor, setTab }: { data: AppState; actor: Employee; setTab: (tab: string) => void }) {
-  const records = actor.role === "salesperson" ? data.sales : data.expenses;
-  return <><PageTitle eyebrow="Personal workspace" title={`Welcome, ${actor.display_name.split(" ")[0]}`}><p>Your submissions and their current decision status.</p></PageTitle>
-    <section className="panel empty-action"><div><h2>{records.length ? `${records.length} submission${records.length === 1 ? "" : "s"}` : "No submissions yet"}</h2><p>New records appear here after the database confirms the save.</p></div><button className="primary" onClick={() => setTab("new")}>Report {actor.role === "salesperson" ? "sale" : "expense"}</button></section>
-    {actor.role === "salesperson" ? <SalesTable sales={data.sales} compact /> : <ExpensesTable expenses={data.expenses} compact />}
-  </>;
+function ProjectLinks() {
+  const links = [
+    process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME && ["Telegram bot", `https://t.me/${process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME}`],
+    process.env.NEXT_PUBLIC_GOOGLE_SHEET_URL && ["Google Sheets records", process.env.NEXT_PUBLIC_GOOGLE_SHEET_URL],
+    process.env.NEXT_PUBLIC_GITHUB_URL && ["GitHub repository", process.env.NEXT_PUBLIC_GITHUB_URL],
+  ].filter(Boolean) as string[][];
+  if (!links.length) return null;
+  return <section className="project-links"><p className="eyebrow">Project links</p><div>{links.map(([label, href]) => <a key={label} href={href} target="_blank" rel="noreferrer">{label}<span>↗</span></a>)}</div></section>;
+}
+
+function ReviewerGuide() {
+  return <section className="reviewer-guide"><p className="eyebrow">Reviewer guide</p><h2>Enter, decide, verify</h2><ol><li>Select a fictional employee. The server returns only that employee’s records; Svetlana is the company-wide manager view.</li><li>Submit a sale or expense from the permitted role.</li><li>As Svetlana, review the original proposal and finalise the decision.</li><li>Use retry if Sheets sync or Telegram delivery failed.</li></ol><p className="guide-note"><strong>Telegram account linking:</strong> send <code>/id</code> privately to the bot, then paste the returned IDs into Manager setup.</p></section>;
 }
 
 function SaleForm({ actor, submit }: { actor: Employee; submit: (path: string, body: object, success: string) => Promise<void> }) {
