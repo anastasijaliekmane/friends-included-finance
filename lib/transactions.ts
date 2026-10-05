@@ -202,12 +202,25 @@ export async function getApplicationState(actorEmployeeId: string) {
   if (error) throw new Error(error.message);
   const sales = (salesResult.data ?? []) as Sale[];
   const expenses = (expensesResult.data ?? []) as Expense[];
+  let summary = calculateSummary(sales, expenses);
+  if (actor.role !== "manager") {
+    const [allSalesResult, allExpensesResult] = await Promise.all([
+      supabase.from("sales").select("*"),
+      supabase.from("expenses").select("*"),
+    ]);
+    const summaryError = allSalesResult.error || allExpensesResult.error;
+    if (summaryError) throw new Error(summaryError.message);
+    summary = calculateSummary(
+      (allSalesResult.data ?? []) as Sale[],
+      (allExpensesResult.data ?? []) as Expense[],
+    );
+  }
   return {
     actor,
     employees: employeesResult.data ?? [],
     sales,
     expenses,
     links: linksResult.data ?? [],
-    summary: actor.role === "manager" ? calculateSummary(sales, expenses) : null,
+    summary,
   };
 }
