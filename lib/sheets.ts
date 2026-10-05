@@ -14,10 +14,18 @@ const EXPENSE_HEADERS = [
   "Proposed allocation", "Final allocation", "Status", "Origin", "Sheet sync"
 ];
 
+export function parseGoogleCredentials(raw: string) {
+  const parsed = JSON.parse(raw) as Record<string, unknown>;
+  if (typeof parsed.private_key === "string") {
+    parsed.private_key = parsed.private_key.replace(/\\n/g, "\n");
+  }
+  return parsed;
+}
+
 function credentials() {
   const raw = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
   if (!raw) throw new Error("Google Sheets is not configured");
-  return JSON.parse(raw.replace(/\\n/g, "\n"));
+  return parseGoogleCredentials(raw);
 }
 
 async function sheetsRequest<T>(path: string, init?: RequestInit): Promise<T> {
