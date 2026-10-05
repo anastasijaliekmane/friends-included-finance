@@ -32,7 +32,7 @@ async function api(path: string, init?: RequestInit) {
 }
 
 export default function FinanceApp() {
-  const [employeeId, setEmployeeId] = useState("svetlana");
+  const [employeeId, setEmployeeId] = useState("richard");
   const [data, setData] = useState<AppState | null>(null);
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState<{ tone: "ok" | "error"; text: string } | null>(null);
@@ -97,13 +97,15 @@ export default function FinanceApp() {
         <p><strong>{actor.display_name.split(" ")[0]}</strong> {actor.role === "manager" ? "can review company-wide records, approve sales, and allocate expenses." : actor.role === "salesperson" ? "can see only their own submitted sales and statuses." : "can submit expenses and see only their own records."}</p>
       </section>
 
+      <p style={{ margin: "22px 0 0", borderLeft: "4px solid var(--coral)", background: "var(--cream)", padding: "14px 17px", color: "#5c342e" }}>Select a demonstration role to enter or review records.</p>
+
       <section className="workspace">
           {notice && <div className={cls("notice", notice.tone)} role="status">{notice.text}</div>}
           {loading && <div className="loading">Updating records…</div>}
           {!loading && !data && <ConfigurationHelp />}
           {!loading && data && actor.role === "manager" && <><Dashboard data={data} /><ProjectLinks /><ReviewerGuide /><Decisions data={data} action={action} /><ManagerSetup data={data} action={action} /><Records data={data} actor={actor} action={action} /></>}
-          {!loading && data && actor.role === "salesperson" && <><SaleForm actor={actor} submit={action} /><ReviewerGuide /><ProjectLinks /><Records data={data} actor={actor} action={action} /></>}
-          {!loading && data && actor.role === "expense_reporter" && <><ExpenseForm actor={actor} submit={action} /><ReviewerGuide /><ProjectLinks /><Records data={data} actor={actor} action={action} /></>}
+          {!loading && data && actor.role === "salesperson" && <><Dashboard data={data} /><ProjectLinks /><SaleForm actor={actor} submit={action} /><ReviewerGuide /><Records data={data} actor={actor} action={action} /></>}
+          {!loading && data && actor.role === "expense_reporter" && <><Dashboard data={data} /><ProjectLinks /><ExpenseForm actor={actor} submit={action} /><ReviewerGuide /><Records data={data} actor={actor} action={action} /></>}
       </section>
     </main>
   );
@@ -116,10 +118,9 @@ function PageTitle({ eyebrow, title, children }: { eyebrow: string; title: strin
 function Dashboard({ data }: { data: AppState }) {
   const s = data.summary!;
   return <>
-    <PageTitle eyebrow="Financial dashboard" title="The numbers, reconciled"><p>Approved income, commissions, and recorded expenses.</p></PageTitle>
     <div className="project-grid dashboard-grid">
-      <ProjectCard code="A" name="Respectable Relatives" data={s.projectA} />
-      <ProjectCard code="B" name="Drunk University Friends" data={s.projectB} />
+      <ProjectCard code="A" data={s.projectA} />
+      <ProjectCard code="B" data={s.projectB} />
       <section className="project-card company-card"><p className="eyebrow">Company total</p><h2 className="project-result">{euro(s.company.resultCents)}</h2><dl className="statement"><div><dt>Approved income</dt><dd>{euro(s.company.approvedIncomeCents)}</dd></div><div><dt>Commission expense</dt><dd>{euro(s.company.commissionExpenseCents)}</dd></div><div><dt>All recorded expenses</dt><dd>{euro(s.company.recordedExpenseCents)}</dd></div><div><dt>Company overhead</dt><dd>{euro(s.company.overheadCents)}</dd></div><div><dt>Awaiting allocation</dt><dd>{euro(s.company.awaitingAllocationCents)}</dd></div></dl></section>
     </div>
     <section className="commission-strip"><span>Commission earned</span><strong>Richard {euro(s.commissions.richard)}</strong><strong>Anastasia {euro(s.commissions.anastasia)}</strong><strong>Jean-Claude {euro(s.commissions.jeanClaude)}</strong></section>
@@ -127,8 +128,8 @@ function Dashboard({ data }: { data: AppState }) {
   </>;
 }
 
-function ProjectCard({ code, name, data }: { code: string; name: string; data: FinanceSummary["projectA"] }) {
-  return <section className="project-card"><p className="eyebrow">Project {code}</p><h2 className="project-result">{euro(data.resultCents)}</h2><p className="project-name">{name}</p>
+function ProjectCard({ code, data }: { code: string; data: FinanceSummary["projectA"] }) {
+  return <section className="project-card"><p className="eyebrow">Project {code}</p><h2 className="project-result">{euro(data.resultCents)}</h2>
     <dl className="statement"><div><dt>Approved income</dt><dd>{euro(data.approvedIncomeCents)}</dd></div><div><dt>Commission expense</dt><dd>{euro(data.commissionExpenseCents)}</dd></div><div><dt>Allocated expenses</dt><dd>{euro(data.allocatedExpenseCents)}</dd></div></dl>
   </section>;
 }
@@ -144,7 +145,7 @@ function ProjectLinks() {
 }
 
 function ReviewerGuide() {
-  return <section className="reviewer-guide"><p className="eyebrow">Reviewer guide</p><h2>Enter, decide, verify</h2><ol><li>Select a fictional employee. The server returns only that employee’s records; Svetlana is the company-wide manager view.</li><li>Submit a sale or expense from the permitted role.</li><li>As Svetlana, review the original proposal and finalise the decision.</li><li>Use retry if Sheets sync or Telegram delivery failed.</li></ol><p className="guide-note"><strong>Telegram account linking:</strong> send <code>/start</code> or <code>/whoami</code> privately to the bot, then paste the returned IDs into Manager setup.</p></section>;
+  return <section className="reviewer-guide"><p className="eyebrow">Reviewer guide</p><h2>Enter, decide, verify</h2><ol><li>Select a fictional employee. The server returns only that employee’s records; Svetlana is the only company-wide manager view.</li><li>Submit a sale or expense from the permitted role.</li><li>As Svetlana, review original proposals and finalise the decision.</li><li>Use retry if Sheets sync or notification delivery failed.</li></ol><p className="guide-note"><strong>Telegram account linking:</strong> send <code>/start</code> or <code>/whoami</code> privately to the bot. Then, as Svetlana, paste the returned user ID and private chat ID into Manager setup.</p><p className="guide-note"><strong>Sheet review:</strong> use the Google Sheets records link above. The homework ledger is shared as Viewer; no edit access is needed to verify the synchronized rows.</p></section>;
 }
 
 function SaleForm({ actor, submit }: { actor: Employee; submit: (path: string, body: object, success: string) => Promise<void> }) {
@@ -153,8 +154,8 @@ function SaleForm({ actor, submit }: { actor: Employee; submit: (path: string, b
     event.preventDefault(); setBusy(true); const form = new FormData(event.currentTarget);
     try { await submit("/api/sales", { actorEmployeeId: actor.id, reference: form.get("reference"), customer: form.get("customer"), project: form.get("project"), description: form.get("description"), amount: form.get("amount"), richardPct: form.get("richardPct"), anastasiaPct: form.get("anastasiaPct"), jeanClaudePct: form.get("jeanClaudePct") }, "Sale saved as Pending approval"); event.currentTarget.reset(); } finally { setBusy(false); }
   }
-  return <><PageTitle eyebrow="Sales entry" title="Report a delivered sale"><p>The commission percentages divide a 10% pool and must total 100%.</p></PageTitle>
-    <form className="form-panel" onSubmit={onSubmit}><div className="form-grid"><Field label="Unique reference"><input name="reference" required placeholder="S03" /></Field><Field label="Customer"><input name="customer" required placeholder="Emma Stonebridge" /></Field><Field label="Project"><select name="project"><option value="A">A — Respectable Relatives</option><option value="B">B — Drunk University Friends</option></select></Field><Field label="Amount in euros"><input name="amount" required type="number" min="0.01" step="0.01" placeholder="1500.00" /></Field><Field label="Description" wide><textarea name="description" required rows={3} placeholder="What was delivered" /></Field></div><fieldset><legend>Proposed commission split</legend><div className="triple"><Field label="Richard %"><input name="richardPct" type="number" min="0" max="100" defaultValue="40" required /></Field><Field label="Anastasia %"><input name="anastasiaPct" type="number" min="0" max="100" defaultValue="40" required /></Field><Field label="Jean-Claude %"><input name="jeanClaudePct" type="number" min="0" max="100" defaultValue="20" required /></Field></div></fieldset><button className="primary" disabled={busy}>{busy ? "Saving…" : "Save sale"}</button></form>
+  return <><PageTitle eyebrow="Sales entry" title="Record a delivered sale"><p>The commission percentages divide a 10% pool and must total 100%.</p></PageTitle>
+    <form className="form-panel" onSubmit={onSubmit}><div className="form-grid"><Field label="Unique reference"><input name="reference" required placeholder="S03" /></Field><Field label="Customer"><input name="customer" required placeholder="Emma Stonebridge" /></Field><Field label="Project"><select name="project"><option value="A">A — Respectable Relatives</option><option value="B">B — Drunk University Friends</option></select></Field><Field label="Amount in euros"><input name="amount" required type="number" min="0.01" step="0.01" placeholder="1500.00" /></Field><Field label="Description" wide><textarea name="description" required rows={3} placeholder="What was delivered" /></Field></div><fieldset><legend>Proposed commission split</legend><div className="triple"><Field label="Richard %"><input name="richardPct" type="number" min="0" max="100" defaultValue="50" required /></Field><Field label="Anastasia %"><input name="anastasiaPct" type="number" min="0" max="100" defaultValue="30" required /></Field><Field label="Jean-Claude %"><input name="jeanClaudePct" type="number" min="0" max="100" defaultValue="20" required /></Field></div></fieldset><button className="primary" disabled={busy}>{busy ? "Saving…" : "Save sale for approval"}</button></form>
   </>;
 }
 
