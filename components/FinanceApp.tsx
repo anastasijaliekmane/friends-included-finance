@@ -124,7 +124,7 @@ function Dashboard({ data }: { data: AppState }) {
       <section className="project-card company-card"><p className="eyebrow">Company total</p><h2 className="project-result">{euro(s.company.resultCents)}</h2><dl className="statement"><div><dt>Approved income</dt><dd>{euro(s.company.approvedIncomeCents)}</dd></div><div><dt>Commission expense</dt><dd>{euro(s.company.commissionExpenseCents)}</dd></div><div><dt>All recorded expenses</dt><dd>{euro(s.company.recordedExpenseCents)}</dd></div><div><dt>Company overhead</dt><dd>{euro(s.company.overheadCents)}</dd></div><div><dt>Awaiting allocation</dt><dd>{euro(s.company.awaitingAllocationCents)}</dd></div></dl></section>
     </div>
     <section className="commission-strip"><span>Commission earned</span><strong>Richard {euro(s.commissions.richard)}</strong><strong>Anastasia {euro(s.commissions.anastasia)}</strong><strong>Jean-Claude {euro(s.commissions.jeanClaude)}</strong></section>
-    <section className="panel attention"><div><p className="eyebrow">Needs Svetlana</p><h2>{data.sales.filter((s) => s.status === "pending").length} sales and {data.expenses.filter((e) => e.status === "awaiting_allocation").length} expenses await a decision</h2></div></section>
+    {data.actor.role === "manager" && <section className="panel attention"><div><p className="eyebrow">Needs Svetlana</p><h2>{data.sales.filter((s) => s.status === "pending").length} sales and {data.expenses.filter((e) => e.status === "awaiting_allocation").length} expenses await a decision</h2></div></section>}
   </>;
 }
 
