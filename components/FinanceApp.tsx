@@ -104,8 +104,8 @@ export default function FinanceApp() {
           {loading && <div className="loading">Updating records…</div>}
           {!loading && !data && <ConfigurationHelp />}
           {!loading && data && actor.role === "manager" && <><Dashboard data={data} /><ProjectLinks /><ReviewerGuide /><Decisions data={data} action={action} /><ManagerSetup data={data} action={action} /><Records data={data} actor={actor} action={action} /></>}
-          {!loading && data && actor.role === "salesperson" && <><Dashboard data={data} /><ProjectLinks /><SaleForm actor={actor} submit={action} /><ReviewerGuide /><Records data={data} actor={actor} action={action} /></>}
-          {!loading && data && actor.role === "expense_reporter" && <><Dashboard data={data} /><ProjectLinks /><ExpenseForm actor={actor} submit={action} /><ReviewerGuide /><Records data={data} actor={actor} action={action} /></>}
+          {!loading && data && actor.role === "salesperson" && <><ProjectLinks /><SaleForm actor={actor} submit={action} /><ReviewerGuide /><Records data={data} actor={actor} action={action} /></>}
+          {!loading && data && actor.role === "expense_reporter" && <><ProjectLinks /><ExpenseForm actor={actor} submit={action} /><ReviewerGuide /><Records data={data} actor={actor} action={action} /></>}
       </section>
     </main>
   );
@@ -116,7 +116,8 @@ function PageTitle({ eyebrow, title, children }: { eyebrow: string; title: strin
 }
 
 function Dashboard({ data }: { data: AppState }) {
-  const s = data.summary!;
+  if (data.actor.role !== "manager" || !data.summary) return null;
+  const s = data.summary;
   return <>
     <div className="project-grid dashboard-grid">
       <ProjectCard code="A" data={s.projectA} />
