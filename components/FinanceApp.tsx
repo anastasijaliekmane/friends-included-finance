@@ -144,7 +144,7 @@ function ProjectLinks() {
 }
 
 function ReviewerGuide() {
-  return <section className="reviewer-guide"><p className="eyebrow">Reviewer guide</p><h2>Enter, decide, verify</h2><ol><li>Select a fictional employee. The server returns only that employee’s records; Svetlana is the company-wide manager view.</li><li>Submit a sale or expense from the permitted role.</li><li>As Svetlana, review the original proposal and finalise the decision.</li><li>Use retry if Sheets sync or Telegram delivery failed.</li></ol><p className="guide-note"><strong>Telegram account linking:</strong> send <code>/id</code> privately to the bot, then paste the returned IDs into Manager setup.</p></section>;
+  return <section className="reviewer-guide"><p className="eyebrow">Reviewer guide</p><h2>Enter, decide, verify</h2><ol><li>Select a fictional employee. The server returns only that employee’s records; Svetlana is the company-wide manager view.</li><li>Submit a sale or expense from the permitted role.</li><li>As Svetlana, review the original proposal and finalise the decision.</li><li>Use retry if Sheets sync or Telegram delivery failed.</li></ol><p className="guide-note"><strong>Telegram account linking:</strong> send <code>/start</code> or <code>/whoami</code> privately to the bot, then paste the returned IDs into Manager setup.</p></section>;
 }
 
 function SaleForm({ actor, submit }: { actor: Employee; submit: (path: string, body: object, success: string) => Promise<void> }) {
